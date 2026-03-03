@@ -1,16 +1,17 @@
 {
   "name": "faaah-extension",
-  "displayName": "Faaah",
+  "displayName": "Faaah - Trend Sound Effects for Errors",
   "description": "Plays a sound effect when errors appear in the Problems panel or a terminal exits with a non-zero code.",
   "version": "0.0.1",
-  "publisher": "faaah",
+  "publisher": "HrishikeshNate",
+  "icon": "media/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/faaah/faaah-extension"
   },
   "license": "MIT",
   "engines": {
-    "vscode": "^1.87.0"
+    "vscode": "^1.93.0"
   },
   "categories": [
     "Other"

@@ -8,3 +8,5 @@ tsconfig.json
 !out/**
 node_modules/**
 !media/**
+media/*.jpeg
+media/*.jpg

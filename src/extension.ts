@@ -68,6 +68,11 @@ function playSound(soundPath: string): void {
 // Extension activation
 // ---------------------------------------------------------------------------
 export function activate(context: vscode.ExtensionContext): void {
+    const log = vscode.window.createOutputChannel('Faaah');
+    log.appendLine('Faaah activated. Extension path: ' + context.extensionPath);
+    log.show(true); // auto-open so user can see it
+    vscode.window.showInformationMessage('Faaah is active ✓');
+
     let previousErrorCount = getTotalErrorCount();
     let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -78,28 +83,35 @@ export function activate(context: vscode.ExtensionContext): void {
         const config = vscode.workspace.getConfiguration('faaah');
         const custom = config.get<string>('soundFile', '').trim();
         if (custom !== '') {
+            log.appendLine('Using custom sound: ' + custom);
             return custom;
         }
-        return getBundledSoundPath(context.extensionPath);
+        const bundled = getBundledSoundPath(context.extensionPath);
+        log.appendLine('Using bundled sound: ' + bundled);
+        return bundled;
     }
 
     // ------------------------------------------------------------------
     // Helper: debounced trigger
     // ------------------------------------------------------------------
-    function triggerSound(): void {
+    function triggerSound(reason: string): void {
         const config = vscode.workspace.getConfiguration('faaah');
         if (!config.get<boolean>('enabled', true)) {
+            log.appendLine('Sound disabled, skipping. Reason: ' + reason);
             return;
         }
 
         const delay = config.get<number>('debounceMs', 500);
+        log.appendLine(`Trigger: ${reason} — playing in ${delay}ms`);
 
         if (debounceTimer !== undefined) {
             clearTimeout(debounceTimer);
         }
 
         debounceTimer = setTimeout(() => {
-            playSound(resolveSoundPath());
+            const soundPath = resolveSoundPath();
+            log.appendLine('Playing: ' + soundPath);
+            playSound(soundPath);
             debounceTimer = undefined;
         }, delay);
     }
@@ -109,21 +121,30 @@ export function activate(context: vscode.ExtensionContext): void {
     // ------------------------------------------------------------------
     const diagListener = vscode.languages.onDidChangeDiagnostics(() => {
         const currentErrorCount = getTotalErrorCount();
-
         if (currentErrorCount > previousErrorCount) {
-            triggerSound();
+            triggerSound(`diagnostics error count ${previousErrorCount} → ${currentErrorCount}`);
         }
-
         previousErrorCount = currentErrorCount;
     });
 
     // ------------------------------------------------------------------
-    // 2. Watch terminals for non-zero exit codes
+    // 2a. Shell integration: fires per-command when shell integration active
     // ------------------------------------------------------------------
-    const terminalListener = vscode.window.onDidCloseTerminal(terminal => {
+    const shellExecListener = vscode.window.onDidEndTerminalShellExecution(event => {
+        log.appendLine(`onDidEndTerminalShellExecution exitCode=${event.exitCode}`);
+        if (event.exitCode !== undefined && event.exitCode !== 0) {
+            triggerSound(`terminal command exited with ${event.exitCode}`);
+        }
+    });
+
+    // ------------------------------------------------------------------
+    // 2b. Fallback: fires when a terminal is closed (no shell integration)
+    // ------------------------------------------------------------------
+    const closeListener = vscode.window.onDidCloseTerminal(terminal => {
         const exitCode = terminal.exitStatus?.code;
+        log.appendLine(`onDidCloseTerminal exitCode=${exitCode}`);
         if (exitCode !== undefined && exitCode !== 0) {
-            triggerSound();
+            triggerSound(`terminal closed with exit code ${exitCode}`);
         }
     });
 
@@ -138,11 +159,12 @@ export function activate(context: vscode.ExtensionContext): void {
             );
             return;
         }
-        vscode.window.showInformationMessage(`Faaah: Playing ${soundPath}`);
+        log.appendLine('Test command: playing ' + soundPath);
+        log.show(true);
         playSound(soundPath);
     });
 
-    context.subscriptions.push(diagListener, terminalListener, testCommand);
+    context.subscriptions.push(log, diagListener, shellExecListener, closeListener, testCommand);
 }
 
 export function deactivate(): void {
