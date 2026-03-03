@@ -1,0 +1,62 @@
+{
+  "name": "faaah-extension",
+  "displayName": "Faaah",
+  "description": "Plays a sound effect when errors appear in the Problems panel or a terminal exits with a non-zero code.",
+  "version": "0.0.1",
+  "publisher": "faaah",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/faaah/faaah-extension"
+  },
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.87.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Faaah",
+      "properties": {
+        "faaah.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable or disable error sound effects."
+        },
+        "faaah.soundFile": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to a custom sound file (.wav, .aiff, .mp3, .oga). Leave empty to use the default system error sound."
+        },
+        "faaah.debounceMs": {
+          "type": "number",
+          "default": 500,
+          "minimum": 0,
+          "description": "Milliseconds to wait after an error event before playing the sound (debounce). Prevents rapid repeated playback."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "faaah.testSound",
+        "title": "Faaah: Test Error Sound"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.87.0",
+    "typescript": "^5.3.0"
+  }
+}
